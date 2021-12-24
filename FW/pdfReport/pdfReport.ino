@@ -469,7 +469,7 @@ void tmepData() {
   float graghtempY;
   int min0 = -5;
   int max0 = 5;
-
+  int i = 0;
   // flag = 0 처음 시작
   // flag = 1 중간 데이터
   // flag = 2 마지막 데이터
@@ -478,9 +478,10 @@ void tmepData() {
   // file.write(" l");
   while (true)
   {
+    i ++;
     tempY = random(min0, max0);
-    graghTimeX = 52.8 + (496.2 / (dataLen-1) * i);  //ok 496.2? = 550 - 52.8
-    graghtempY = 100 + (320.00/(abs(max0) + abs(min0))) * (tempY + abs(min0));
+    // graghTimeX = 52.8 + (497.2 / (dataLen-1) * i);  // ok 497.2? = 550 - 52.8
+    graghtempY = 100 + (320.00 / (abs(max0) + abs(min0))) * (tempY + abs(min0));
 
     if (tempY == 1.00) 
     {  // stop read and pdf create
