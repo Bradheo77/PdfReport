@@ -79,8 +79,6 @@ int gCount = 1024;
 
 //float tempY[] = {-20, -35, -18, -12 , 80, -28, -28, -28, -22};
 
-float tempY[100] = {};
-
 //float tempY[650] = {0, }; // 배열 정의, 동적 메모리 73%사용 
 //uint16_t tempY_tracks = 100; // 셔플 숫자 갯수 
 //unsigned long int atime; // 시작 시간, 밀리 초 
@@ -99,11 +97,14 @@ float tempY[100] = {};
 //  }
 //}
 
-int dataLen = sizeof(tempY)/sizeof(float);
+float max0 = 10;
+float min0 = -10;
+int dataLen;
 
+float tempY;
+float graghTimeX;
+float graghtempY;
 
-float min0 = 0;
-float max0 = 0;
 int flag = 0;
 
 char Model[8] = "Solubiz";
@@ -125,14 +126,18 @@ char AlarmSetting[18] = "No Alarm Setting";
 char MKTtempY[5] = "21.2";
 char AVGtempY[5] = "10.0";
 
-int startTime = 0;
-int stopTime = 0;
+int startTime;
+int stopTime;
 
 int incomingByte;
+
 
 // the setup function runs once when you press reset or power the board
 void setup()
 {
+  min0 = -20;
+  max0 = 20;
+  dataLen = 20;
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -160,16 +165,14 @@ void setup()
 
   delay(1000);
 
-
-  
-  for (int mT = 0; mT < dataLen; mT++) {
-    min0 = min(min0, tempY[mT]);
-    max0 = max(max0, tempY[mT]);
-   }
-
   startTime = 0;
   stopTime = DataPoint;
-  
+
+  Serial.println("Adafruit TinyUSB Mass Storage External Flash example");
+  //Serial.print("FLASH CHIP: "); Serial.println(EXTERNAL_FLASH_DEVICES);
+  Serial.print("JEDEC ID: "); Serial.println(flash.getJEDECID(), HEX);
+  Serial.print("Flash size: "); Serial.println(flash.size());
+
   Serial.println();
   Serial.print("max0: ");
   Serial.println(max0);
@@ -177,14 +180,9 @@ void setup()
   Serial.println(min0);
   Serial.print("DataPoint: ");
   Serial.println(DataPoint);
-  Serial.println("Adafruit TinyUSB Mass Storage External Flash example");
-  //Serial.print("FLASH CHIP: "); Serial.println(EXTERNAL_FLASH_DEVICES);
-  Serial.print("JEDEC ID: "); Serial.println(flash.getJEDECID(), HEX);
-  Serial.print("Flash size: "); Serial.println(flash.size());
 
   changed = false; // to print contents initially
   makefile();  //file save test
-
 }
 
 #define FILE_BASE_NAME "Solubiz.pdf"
@@ -310,7 +308,8 @@ void writeHeader() {
   graghVerticalLine();
   graghHorizontalLine();
   graghHorizontalLineTime();
-  graghtempYData();
+  // graghtempYData();
+  tmepData(); // tempData write gragh
 
 }
 
@@ -321,19 +320,18 @@ void graghSquare()
   file.write("1 w\n");
   file.write("0.5 0.5 0.5 RG\n");
   file.write("[] 0 d\n");
-  file.write("53 100 496 320 re h S\n");
+  file.write("50 100 500 320 re h S\n");
 }
 
 void graghVerticalLine()
 {
-  int minTempY = min0;
-  int maxTempY = max0;
-
   int verticalStand = 100;
   int lenTempY = 0;
+  int lenY = 320;
+  int lenMin0 = min0;
+  int lenMax0 = max0;
 
-  Serial.print(tempY[5]);
-  lenTempY = (abs(maxTempY) + abs(min0));
+  lenTempY = (abs(lenMax0) + abs(lenMin0));
 
   int cnt = 10;
   int cntTempY = lenTempY/cnt;
@@ -343,53 +341,55 @@ void graghVerticalLine()
   file.write("[2] 0 d\n");
   file.write("BT\n/F1 7 Tf\n");
   _printf("32  %d Td\n",  verticalStand);
-  _printf("(%d)Tj\n", minTempY);
+  _printf("(%d)Tj\n", lenMin0);
   file.write("ET\n");
   
-  for(int i = 1; i < cnt; i++) {
-    minTempY= minTempY + cntTempY;
+  for(int i = 1; i < cnt; i++) 
+  {
+    lenMin0 = lenMin0 + cntTempY;
 
     file.write("0.1 w\n");
     file.write("[2] 0 d\n");
-    _printf("53 %d m 548 %d l 0 0 m s\n", verticalStand + (320/cnt * i), verticalStand + (320/cnt * i));
+    _printf("50 %d m 550 %d l 0 0 m s\n", verticalStand + (lenY/cnt * i), verticalStand + (lenY/cnt * i));
     file.write("BT\n/F1 7 Tf\n");
-    _printf("32  %d Td\n",  verticalStand + (320/cnt * i));
-    _printf("(%d)Tj\n", minTempY);
+    _printf("32  %d Td\n",  verticalStand + (lenY/cnt * i));
+    _printf("(%d)Tj\n", lenMin0);
     file.write("ET\n");
   }
   // MaxTemp
   file.write("0.1 w\n");
   file.write("[2] 0 d\n");
-  _printf("53 %d m 548 %d l 0 0 m s\n", verticalStand + (320/cnt * (cnt)), verticalStand + (320/cnt * (cnt)));
-    file.write("BT\n/F1 7 Tf\n");
-  _printf("32  %d Td\n",  verticalStand + (320/cnt * (cnt)));
-  _printf("(%d)Tj\n", maxTempY);
+  _printf("50 %d m 550 %d l 0 0 m s\n", verticalStand + (lenY/cnt * (cnt)), verticalStand + (lenY/cnt * (cnt)));
+  file.write("BT\n/F1 7 Tf\n");
+  _printf("32  %d Td\n",  verticalStand + (lenY/cnt * (cnt)));
+  _printf("(%d)Tj\n", lenMax0);
   file.write("ET\n");          
-  }
+}
 
 void graghHorizontalLine()
 {
   int i = 0;
   int x = 8;
-  int horizontalStand = 101;
+  int horizontalStand = 100;
   
   file.write("0.1 w\n0.5 0.5 0.5 RG\n[1] 0 d\n");
   _printf("%d 100 m %d 420 l 0 0 m s\n", horizontalStand, horizontalStand);
-  while(i < x){
+  while(i < x)
+  {
     i = i + 1;
     file.write("0.1 w\n0.5 0.5 0.5 RG\n[1] 0 d\n");
     _printf("%d 100 m %d 420 l 0 0 m s\n", horizontalStand + (50 * i), horizontalStand + (50 * i));
   }  
 }
-
+ 
 void graghHorizontalLineTime(){
   int a = 100;
-  int addTime, avgTime; 
-  avgTime = stopTime / 10;
+  int addTime; 
   
   _printf("BT\n/F1 7 Tf\n0%d 91 TD\n(%d)Tj\nET\n", a - 50, startTime);
 
-  for (int i = 1; i < 11; i++) {
+  for (int i = 1; i < 11; i++) 
+  {
     addTime = startTime + (10 * i);
     _printf("BT\n/F1 7 Tf\n%d 91 TD\n(%d)Tj\nET\n", a, addTime);
     a = a + 50;    
@@ -397,7 +397,7 @@ void graghHorizontalLineTime(){
   file.write("0.1 w\n0 0 1 RG\n[] 0 d\n");
 
 }
-
+/*
 void graghtempYData(){
   float graghTimeX, graghtempY;
   int maxTempY = max0;
@@ -432,6 +432,74 @@ void graghtempYData(){
   
   Serial.print("File Save End");
 }
+*/
+
+void tmepData() 
+{
+  int i = 0;
+  
+  while (i < dataLen + 1)
+  {
+    Serial.println("");
+    tempY = random(min0, max0);
+    graghTimeX = 50 + (500 / (dataLen) * i);  // ok S: 50, E: 550
+    graghtempY = 100 + (320.00 / (abs(max0) + abs(min0))) * (tempY + abs(min0));
+    Serial.print("i: ");
+    Serial.print(i);
+    Serial.print(", ");
+    i ++;
+    if (flag == 0) // first
+    {
+      Serial.print("tempY: ");
+      Serial.println(tempY);
+
+      Serial.print("graghtemp X Y: ");
+      Serial.print(graghTimeX);
+      Serial.print(" ");
+      Serial.print(graghtempY);
+      Serial.println(" m");
+      _printf(" %.2f %.2f", graghTimeX, graghtempY);
+      file.write(" m");
+      flag = 1;
+    }
+    else if (flag == 1) // middle
+    {
+      Serial.print("tempY: ");
+      Serial.println(tempY);
+
+      Serial.print("graghtemp X Y: ");
+      Serial.print(graghTimeX);
+      Serial.print(" ");
+      Serial.print(graghtempY);
+      Serial.println(" l");
+      _printf(" %.2f %.2f", graghTimeX, graghtempY);
+      file.write(" l");
+    }  
+    delay(1000);    
+  }
+  Serial.print("tempY: ");
+  Serial.println(tempY);
+
+  Serial.print("graghtemp X Y: ");
+  Serial.print(graghTimeX);
+  Serial.print(" ");
+  Serial.print(graghtempY);
+  Serial.println(" m h s");
+  _printf(" %.2f %.2f", graghTimeX, graghtempY);
+  file.write(" l");
+  _printf(" %.2f %.2f", graghTimeX, graghtempY);
+  file.write(" m h s\n");
+  file.write("0 0 0 rg\nBT\n/F1 0.2 Tf\n560 20 Td\n(:1.8:)Tj\nET\n");
+  file.write("endstream\nendobj\n");
+  // END
+  file.write("\nxref\n0 5\n0000000000 65535 f\n0000000010 00000 n\n0000000047 00000 n\n0000000111 00000 n\n0000000313 00000 n\ntrailer\n<<\n  /Root 1 0 R\n>>\n\n\n");
+  file.write("startxref\n416\n%%EOF");
+
+  Serial.print("File Save End");
+  delay(1000);
+  file.close();  // PDF close
+  NVIC_SystemReset();  // Reset
+}
 
 void makefile()
 {
@@ -463,72 +531,11 @@ void makefile()
   
 }
 
-void tmepData() {
-  float tempY;
-  float graghTimeX;
-  float graghtempY;
-  int min0 = -5;
-  int max0 = 5;
-  int i = 0;
-  // flag = 0 처음 시작
-  // flag = 1 중간 데이터
-  // flag = 2 마지막 데이터
 
-  // _printf(" %.2f %.2f", graghTimeX, graghtempY);
-  // file.write(" l");
-  while (true)
-  {
-    i ++;
-    tempY = random(min0, max0);
-    // graghTimeX = 52.8 + (497.2 / (dataLen-1) * i);  // ok 497.2? = 550 - 52.8
-    graghtempY = 100 + (320.00 / (abs(max0) + abs(min0))) * (tempY + abs(min0));
-
-    if (tempY == 1.00) 
-    {  // stop read and pdf create
-      flag = 2;
-    }
-    if (flag == 0) 
-    {
-      Serial.print("tempY: ");
-      Serial.println(tempY);
-
-      Serial.print("graghtempY: ");
-      Serial.print(graghtempY);
-      Serial.println(" m");
-      flag = 1;
-    }
-    else if (flag == 1)
-    {
-      Serial.print("tempY: ");
-      Serial.println(tempY);
-
-      Serial.print("graghtempY: ");
-      Serial.print(graghtempY);
-      Serial.println(" l");
-    }  
-    else if (flag == 2) 
-    {
-      Serial.print("tempY: ");
-      Serial.println(tempY);
-
-      Serial.print("graghtempY: ");
-      Serial.print(graghtempY);
-      Serial.println(" m h s");
-      flag = 3;
-    }
-    else if (flag == 3)
-    {
-      Serial.println("STOP");
-      delay(5000);
-    }
-    delay(1000);    
-  }
-  
-}
 
 void loop()
 {
-  tmepData(); // tempData write gragh
+  // tmepData(); // tempData write gragh
 
   //LED TEST
   //PIN_NEOPIXEL
