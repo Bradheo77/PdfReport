@@ -97,8 +97,8 @@ int gCount = 1024;
 //  }
 //}
 
-float max0 = 10;
-float min0 = -10;
+float max0;
+float min0;
 int dataLen;
 
 float tempY;
@@ -118,13 +118,13 @@ char CuerrStat[8] = "Stopped";
 char TripNo[11] = "KI24032456";
 //char MAXtempY = max0;
 char MAXDate[20] = "2021/10/01 17:56:56";
-//char MINtempY[7] = "-20.6";
+// char MINtempY[7] = "-20.6";
 char MINDate[20] = "2021/09/21 15:00:56";
 char TripLength[10] = "19d23h59m";
-int DataPoint = dataLen;
+// int DataPoint = dataLen;
 char AlarmSetting[18] = "No Alarm Setting";
-char MKTtempY[5] = "21.2";
-char AVGtempY[5] = "10.0";
+char MKTtempY;
+char AVGtempY;
 
 int startTime;
 int stopTime;
@@ -135,9 +135,9 @@ int incomingByte;
 // the setup function runs once when you press reset or power the board
 void setup()
 {
-  min0 = -20;
-  max0 = 20;
-  dataLen = 20;
+  min0 = -19;
+  max0 = 33;
+  dataLen = 10000;
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -166,7 +166,7 @@ void setup()
   delay(1000);
 
   startTime = 0;
-  stopTime = DataPoint;
+  stopTime = dataLen;
 
   Serial.println("Adafruit TinyUSB Mass Storage External Flash example");
   //Serial.print("FLASH CHIP: "); Serial.println(EXTERNAL_FLASH_DEVICES);
@@ -178,8 +178,8 @@ void setup()
   Serial.println(max0);
   Serial.print("min0: ");
   Serial.println(min0);
-  Serial.print("DataPoint: ");
-  Serial.println(DataPoint);
+  Serial.print("dataLen: ");
+  Serial.println(dataLen);
 
   changed = false; // to print contents initially
   makefile();  //file save test
@@ -201,7 +201,6 @@ void _printf(const char *s,...){
 
 // Write data header.
 void writeHeader() {
-
   // gheo write - 2021-12-03
   // PDF Set Header
   file.write("%PDF-1.7 \n\n1 0 obj\n<<\n  /Pages 2 0 R\n>>\nendobj\n\n2 0 obj\n<<\n  /Type /Pages\n  /Count 1\n  /Kids [3 0 R]\n>>\nendobj\n3 0 obj\n");
@@ -287,7 +286,7 @@ void writeHeader() {
   file.write("ET\n");
   file.write("BT\n/F2 8 Tf\n85 564 Td\n(Data Points:)Tj\nET\n");
   file.write("BT\n/F1 8 Tf\n134 564 Td\n");
-  _printf("(%d)Tj\n", DataPoint);
+  _printf("(%d)Tj\n", dataLen);
   file.write("ET\n");
   file.write("BT\n/F2 10 Tf\n85 515 Td\n");
   _printf("(%s)Tj\n", AlarmSetting);
@@ -296,20 +295,15 @@ void writeHeader() {
   file.write("BT\n/F2 8 Tf\n412 502 Td\n(First Triggered@)Tj\nET\nBT\n/F2 8 Tf\n518 502 Td\n(Status)Tj\nET\nBT\n/F1 6 Tf\n558 26 Td\n(1/1)Tj\nET\n");
   file.write("BT\n/F2 8 Tf\n242 549 Td\n(MKT:)Tj\nET\n");
   file.write("BT\n/F1 8 Tf\n263 549 Td\n");
-  _printf("(  %s\260C)Tj\n", MKTtempY);
+  _printf("(  %sºC@)Tj\n", MKTtempY);
   file.write("ET\n");
   file.write("BT\n/F2 8 Tf\n242 564 Td\n(Avg:)Tj\nET\n");
   file.write("BT\n/F1 8 Tf\n264 564 Td\n");
-  _printf("(  %s\260C)Tj\n", AVGtempY);
+  _printf("(  %sºC@)Tj\n", AVGtempY);
   file.write("ET\n");
   file.write("BT\n/F1 9 Tf\n53 70 Td\n([\260C])Tj\nET\n");
   file.write("\n");
-  graghSquare();
-  graghVerticalLine();
-  graghHorizontalLine();
-  graghHorizontalLineTime();
-  // graghtempYData();
-  tmepData(); // tempData write gragh
+
 
 }
 
@@ -390,7 +384,7 @@ void graghHorizontalLineTime(){
 
   for (int i = 1; i < 11; i++) 
   {
-    addTime = startTime + (10 * i);
+    addTime = startTime + (dataLen/10 * i);
     _printf("BT\n/F1 7 Tf\n%d 91 TD\n(%d)Tj\nET\n", a, addTime);
     a = a + 50;    
   }
@@ -434,15 +428,14 @@ void graghtempYData(){
 }
 */
 
-void tmepData() 
+void graghtmepData() 
 {
   int i = 0;
-  
   while (i < dataLen + 1)
   {
     Serial.println("");
     tempY = random(min0, max0);
-    graghTimeX = 50 + (500 / (dataLen) * i);  // ok S: 50, E: 550
+    graghTimeX = 50 + (500.00 / (dataLen) * i);  // ok S: 50, E: 550
     graghtempY = 100 + (320.00 / (abs(max0) + abs(min0))) * (tempY + abs(min0));
     Serial.print("i: ");
     Serial.print(i);
@@ -475,7 +468,7 @@ void tmepData()
       _printf(" %.2f %.2f", graghTimeX, graghtempY);
       file.write(" l");
     }  
-    delay(1000);    
+    //delay(1000);    
   }
   Serial.print("tempY: ");
   Serial.println(tempY);
@@ -525,6 +518,12 @@ void makefile()
 
   // Write data header.
   writeHeader();
+  graghSquare();
+  graghVerticalLine();
+  graghHorizontalLine();
+  graghHorizontalLineTime();
+  // graghtempYData();
+  graghtmepData(); // tempData write gragh
   file.close();
 
   // NVIC_SystemReset();   //System reboot
