@@ -103,9 +103,8 @@ int dataLen;
 
 float tempY;
 float graghTimeX;
-float graghtempY;
+float graghTempY;
 
-int flag = 0;
 
 char Model[8] = "Solubiz";
 char Firmware[5] = "V1.0";
@@ -129,15 +128,12 @@ char AVGtempY;
 int startTime;
 int stopTime;
 
-int incomingByte;
-
-
 // the setup function runs once when you press reset or power the board
 void setup()
 {
   min0 = -19;
   max0 = 33;
-  dataLen = 10000;
+  dataLen = 50;
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -187,7 +183,7 @@ void setup()
 
 #define FILE_BASE_NAME "Solubiz.pdf"
 
-// _printf -> file.write %d, %s, %.2f 
+// _printf -> file.write (%d, %s, %.2f)
 void _printf(const char *s,...){
     va_list args;
     va_start(args, s);
@@ -199,14 +195,14 @@ void _printf(const char *s,...){
     delete [] str;
 }
 
-// Write data header.
+// PDF Write data header.
 void writeHeader() {
   // gheo write - 2021-12-03
   // PDF Set Header
   file.write("%PDF-1.7 \n\n1 0 obj\n<<\n  /Pages 2 0 R\n>>\nendobj\n\n2 0 obj\n<<\n  /Type /Pages\n  /Count 1\n  /Kids [3 0 R]\n>>\nendobj\n3 0 obj\n");
   file.write("<<\n  /Type /Page\n  /Contents 4 0 R\n  /Parent 2 0 R\n  /Resources <<\n      /Font <<\n         /F1 <<\n            /Type /Font\n            /Subtype /Type1\n            /BaseFont /Arial\n         >>\n      >>\n   >>\n>>\nendobj\n\n");
 
-  // DATA Format
+  // PDF Format
   file.write("\n4 0 obj\n<</Length 43391>>stream\n0.8 w\n0 0 0 RG\n[] 0 d\n85 753 m 567 753 l h S\n0.5 w\n[] 0 d\n85 710 m 567 710 l h S\n85 606 m 217 606 l h S\n242 606 m 567 606 l h S\n85 511 m 567 511 l h S\n28 753 m 71 753 l h S\n28 661 m 71 661 l h S\n28 661 m 71 661 l h S\n");
   file.write("BT\n0.5 w\n1 0 0 rg\n[] 0 d\n");
   file.write("472.9 798 m 472.9 811 l 484.8 811 l 484.8 808.6 l 475.7 808.6 l 475.7 805.8 l 481.8 805.8 l 481.8 803.5 l 475.7 803.5 l 475.7 800.4 l 485.1 800.4 l 485.1 798 l f\n");
@@ -303,21 +299,17 @@ void writeHeader() {
   file.write("ET\n");
   file.write("BT\n/F1 9 Tf\n53 70 Td\n([\260C])Tj\nET\n");
   file.write("\n");
-
-
 }
 
-// PDF Draw gragh 
-void graghSquare()
+void graghSquare()  // PDF square draw
 {
-  // Create Square 
   file.write("1 w\n");
   file.write("0.5 0.5 0.5 RG\n");
   file.write("[] 0 d\n");
   file.write("50 100 500 320 re h S\n");
 }
 
-void graghVerticalLine()
+void graghVerticalLine()  // PDF Y Line Temp graghLine draw and Temp data write
 {
   int verticalStand = 100;
   int lenTempY = 0;
@@ -327,10 +319,10 @@ void graghVerticalLine()
 
   lenTempY = (abs(lenMax0) + abs(lenMin0));
 
-  int cnt = 10;
-  int cntTempY = lenTempY/cnt;
+  int yLineCount = 10;
+  int cntTempY = lenTempY/yLineCount;
 
-  // MinTemp
+  // minTemp
   file.write("0.1 w\n");
   file.write("[2] 0 d\n");
   file.write("BT\n/F1 7 Tf\n");
@@ -338,149 +330,114 @@ void graghVerticalLine()
   _printf("(%d)Tj\n", lenMin0);
   file.write("ET\n");
   
-  for(int i = 1; i < cnt; i++) 
+  for(int i = 1; i < yLineCount; i++) 
   {
     lenMin0 = lenMin0 + cntTempY;
 
     file.write("0.1 w\n");
     file.write("[2] 0 d\n");
-    _printf("50 %d m 550 %d l 0 0 m s\n", verticalStand + (lenY/cnt * i), verticalStand + (lenY/cnt * i));
+    _printf("50 %d m 550 %d l 0 0 m s\n", verticalStand + (lenY/yLineCount * i), verticalStand + (lenY/yLineCount * i));
     file.write("BT\n/F1 7 Tf\n");
-    _printf("32  %d Td\n",  verticalStand + (lenY/cnt * i));
+    _printf("32  %d Td\n",  verticalStand + (lenY/yLineCount * i));
     _printf("(%d)Tj\n", lenMin0);
     file.write("ET\n");
   }
-  // MaxTemp
+  // maxTemp
   file.write("0.1 w\n");
   file.write("[2] 0 d\n");
-  _printf("50 %d m 550 %d l 0 0 m s\n", verticalStand + (lenY/cnt * (cnt)), verticalStand + (lenY/cnt * (cnt)));
+  _printf("50 %d m 550 %d l 0 0 m s\n", verticalStand + (lenY/yLineCount * (yLineCount)), verticalStand + (lenY/yLineCount * (yLineCount)));
   file.write("BT\n/F1 7 Tf\n");
-  _printf("32  %d Td\n",  verticalStand + (lenY/cnt * (cnt)));
+  _printf("32  %d Td\n",  verticalStand + (lenY/yLineCount * (yLineCount)));
   _printf("(%d)Tj\n", lenMax0);
   file.write("ET\n");          
 }
 
-void graghHorizontalLine()
+void graghHorizontalLine()  // PDF X Line Time graghLine draw
 {
-  int i = 0;
-  int x = 8;
   int horizontalStand = 100;
-  
+  char xLineCount = 9;
+
   file.write("0.1 w\n0.5 0.5 0.5 RG\n[1] 0 d\n");
   _printf("%d 100 m %d 420 l 0 0 m s\n", horizontalStand, horizontalStand);
-  while(i < x)
+  for (char i = 1; i < xLineCount; i++)
   {
-    i = i + 1;
     file.write("0.1 w\n0.5 0.5 0.5 RG\n[1] 0 d\n");
     _printf("%d 100 m %d 420 l 0 0 m s\n", horizontalStand + (50 * i), horizontalStand + (50 * i));
   }  
 }
  
-void graghHorizontalLineTime(){
+void graghHorizontalLineTime()  // PDF X Line Time data write
+{ 
   int a = 100;
-  int addTime; 
+  int addTime;
+  char xdataCount = 11; 
   
   _printf("BT\n/F1 7 Tf\n0%d 91 TD\n(%d)Tj\nET\n", a - 50, startTime);
 
-  for (int i = 1; i < 11; i++) 
+  for (char i = 1; i < xdataCount; i++) 
   {
     addTime = startTime + (dataLen/10 * i);
     _printf("BT\n/F1 7 Tf\n%d 91 TD\n(%d)Tj\nET\n", a, addTime);
     a = a + 50;    
   }
   file.write("0.1 w\n0 0 1 RG\n[] 0 d\n");
-
 }
-/*
-void graghtempYData(){
-  float graghTimeX, graghtempY;
-  int maxTempY = max0;
-  int minTempY = min0;
-  int i = 0;
 
-  graghTimeX = 52.8;
-  graghtempY = 100 + ((320 / (abs(max0) + abs(min0))) * (tempY[i]+abs(min0))); // 280 = 380 - 100
-
-  file.write("0.1 w\n0 0 1 RG\n[] 0 d\n");
-  _printf("%.2f %.2f m", graghTimeX, graghtempY);  
-
-  while (i < dataLen - 1) 
-  {
-     i = i + 1; 
-    graghTimeX = 52.8 + (496.2 / (dataLen-1) * i);  //ok 496.2? = 550 - 52.8
-    graghtempY = 100 + (320.00/(abs(max0) + abs(min0))) * (tempY[i]+abs(min0));
-        
-    _printf(" %.2f %.2f", graghTimeX, graghtempY);
-    file.write(" l");
-  }
-  _printf(" %.2f %.2f", graghTimeX, graghtempY);
-
-  file.write(" m h s\n");
-  file.write("0 0 0 rg\nBT\n/F1 0.2 Tf\n560 20 Td\n(:1.8:)Tj\nET\n");
-  
-  file.write("endstream\nendobj\n");
-
-  // END
-  file.write("\nxref\n0 5\n0000000000 65535 f\n0000000010 00000 n\n0000000047 00000 n\n0000000111 00000 n\n0000000313 00000 n\ntrailer\n<<\n  /Root 1 0 R\n>>\n\n\n");
-  file.write("startxref\n416\n%%EOF");
-  
-  Serial.print("File Save End");
-}
-*/
-
-void graghtmepData() 
+void graghtmepData()  // PDF temp, time gragh draw
 {
-  int i = 0;
-  while (i < dataLen + 1)
+  char flag = 0;
+
+  for (int i = 0; i < dataLen + 1; i++)
   {
     Serial.println("");
     tempY = random(min0, max0);
     graghTimeX = 50 + (500.00 / (dataLen) * i);  // ok S: 50, E: 550
-    graghtempY = 100 + (320.00 / (abs(max0) + abs(min0))) * (tempY + abs(min0));
+    graghTempY = 100 + (320.00 / (abs(max0) + abs(min0))) * (tempY + abs(min0));
+
     Serial.print("i: ");
     Serial.print(i);
     Serial.print(", ");
-    i ++;
-    if (flag == 0) // first
+
+    if (flag == 0)  // first
     {
       Serial.print("tempY: ");
       Serial.println(tempY);
-
       Serial.print("graghtemp X Y: ");
       Serial.print(graghTimeX);
       Serial.print(" ");
-      Serial.print(graghtempY);
+      Serial.print(graghTempY);
       Serial.println(" m");
-      _printf(" %.2f %.2f", graghTimeX, graghtempY);
+
+      _printf(" %.2f %.2f", graghTimeX, graghTempY);
       file.write(" m");
       flag = 1;
     }
-    else if (flag == 1) // middle
+    else if (flag == 1)  // middle
     {
       Serial.print("tempY: ");
       Serial.println(tempY);
-
       Serial.print("graghtemp X Y: ");
       Serial.print(graghTimeX);
       Serial.print(" ");
-      Serial.print(graghtempY);
+      Serial.print(graghTempY);
       Serial.println(" l");
-      _printf(" %.2f %.2f", graghTimeX, graghtempY);
+
+      _printf(" %.2f %.2f", graghTimeX, graghTempY);
       file.write(" l");
     }  
-    //delay(1000);    
+    // delay(1000);    
   }
   Serial.print("tempY: ");
   Serial.println(tempY);
-
   Serial.print("graghtemp X Y: ");
   Serial.print(graghTimeX);
   Serial.print(" ");
-  Serial.print(graghtempY);
+  Serial.print(graghTempY);
   Serial.println(" m h s");
-  _printf(" %.2f %.2f", graghTimeX, graghtempY);
+
+  _printf(" %.2f %.2f", graghTimeX, graghTempY);
   file.write(" l");
-  _printf(" %.2f %.2f", graghTimeX, graghtempY);
+  _printf(" %.2f %.2f", graghTimeX, graghTempY);
   file.write(" m h s\n");
   file.write("0 0 0 rg\nBT\n/F1 0.2 Tf\n560 20 Td\n(:1.8:)Tj\nET\n");
   file.write("endstream\nendobj\n");
@@ -490,8 +447,6 @@ void graghtmepData()
 
   Serial.print("File Save End");
   delay(1000);
-  file.close();  // PDF close
-  NVIC_SystemReset();  // Reset
 }
 
 void makefile()
@@ -522,20 +477,14 @@ void makefile()
   graghVerticalLine();
   graghHorizontalLine();
   graghHorizontalLineTime();
-  // graghtempYData();
+  // graghTempYData();
   graghtmepData(); // tempData write gragh
   file.close();
-
-  // NVIC_SystemReset();   //System reboot
-  
+  NVIC_SystemReset();   //System reboot
 }
-
-
 
 void loop()
 {
-  // tmepData(); // tempData write gragh
-
   //LED TEST
   //PIN_NEOPIXEL
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
